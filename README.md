@@ -2,6 +2,8 @@
 
 A powerful and efficient GNOME Shell extension that provides real-time stock market data with fast batch loading, historical charts, and comprehensive market information.
 
+OG extension : [github.com/cinatic/stocks-extension](https://github.com/cinatic/stocks-extension). Credits - [Cinatic](https://github.com/cinatic/)
+
 ## ✨ Features
 
 ### 🚀 **High Performance**
