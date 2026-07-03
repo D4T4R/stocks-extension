@@ -43,6 +43,10 @@ var removeCache = (keyToDelete, startsWith = true) => {
   keys.forEach(key => delete CACHE[key])
 }
 
+var setCachedValue = (cacheKey, value) => {
+  CACHE[cacheKey] = [Date.now(), value]
+}
+
 var cacheOrDefault = async (cacheKey, evaluator, cacheDuration = CACHE_TIME) => {
   const [timestamp, data] = CACHE[cacheKey] || []
 

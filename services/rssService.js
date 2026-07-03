@@ -3,6 +3,7 @@ const Me = ExtensionUtils.getCurrentExtension()
 
 const { fetch } = Me.imports.helpers.fetchImpersonate
 const { createQuoteSummaryFromYahooData } = Me.imports.services.dto.quoteSummary
+const { createNewsListFromYahooData } = Me.imports.services.dto.newsList
 
 // Simple RSS feed-based fallback service for when Yahoo's API is rate limited
 var getQuoteSummary = async ({ symbol }) => {
@@ -80,9 +81,45 @@ var getHistoricalQuotes = async ({ symbol, range = '1mo', includeTimestamps = tr
 }
 
 var getNewsList = async ({ symbol }) => {
-  // This could work with RSS, but let's keep it simple for now
+  // Yahoo removed its finance RSS feeds. Bing News is preferred because its
+  // items carry real description snippets and direct article links; Google
+  // News (fallback) only provides linked titles. Both parse with the news DTO.
+  const query = encodeURIComponent(`${symbol} stock`)
+  const feedUrls = [
+    `https://www.bing.com/news/search?q=${query}&format=rss`,
+    `https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`
+  ]
+
+  for (const url of feedUrls) {
+    try {
+      const response = await fetch({ url })
+
+      if (!response.ok) {
+        continue
+      }
+
+      const newsList = createNewsListFromYahooData(await response.text())
+
+      if (!newsList.Items || newsList.Items.length === 0) {
+        continue
+      }
+
+      // descriptions may contain HTML markup, strip it for display
+      newsList.Items.forEach(item => {
+        if (item.Description) {
+          item.Description = String(item.Description).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        }
+      })
+
+      return newsList
+    } catch (error) {
+      log(`⚠️ RSS news feed failed for ${symbol} (${url.split('/')[2]}): ${error.message}`)
+    }
+  }
+
   return {
     symbol,
-    error: 'News not available via RSS fallback'
+    Items: [],
+    error: 'News not available'
   }
 }

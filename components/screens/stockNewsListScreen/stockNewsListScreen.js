@@ -78,7 +78,9 @@ var StockNewsListScreen = GObject.registerClass({
 
     this._searchBar.connect('text-change', (sender, searchText) => this._filter_results(searchText))
 
-    this._list.connect('clicked-item', (sender, item) => Gio.AppInfo.launch_default_for_uri_async(item.cardItem.Link, null, null, null))
+    // clicking a news item toggles its inline snippet; the browser is only
+    // opened via the "Read more" link inside the expanded card
+    this._list.connect('clicked-item', (sender, item) => item.toggleExpanded())
 
     this._loadData()
   }

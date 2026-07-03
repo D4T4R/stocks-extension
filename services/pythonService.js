@@ -132,55 +132,40 @@ var getHistoricalQuotes = async ({ symbol, range = '1mo', includeTimestamps = tr
   const scriptPath = Me.path + '/helpers/yahoo_historical_fetcher.py'
   
   // Convert range to period and interval for yahooquery
+  // range holds the CHART_RANGES values from services/meta/generic.js
   let period = '1d'
   let interval = '1m'
-  
+
   switch (range) {
-    case 'INTRADAY':
+    case '1d': // INTRADAY
       period = '1d'
       interval = '1m'
       break
-    case 'ONE_DAY':
-      period = '1d'
-      interval = '5m'
-      break
-    case 'FIVE_DAY':
+    case '5d': // WEEK
       period = '5d'
       interval = '15m'
       break
-    case 'ONE_MONTH':
+    case '1mo': // MONTH
       period = '1mo'
       interval = '1d'
       break
-    case 'THREE_MONTH':
-      period = '3mo'
-      interval = '1d'
-      break
-    case 'SIX_MONTH':
+    case '6mo': // HALF_YEAR
       period = '6mo'
       interval = '1d'
       break
-    case 'ONE_YEAR':
-      period = '1y'
-      interval = '1wk'
-      break
-    case 'TWO_YEAR':
-      period = '2y'
-      interval = '1wk'
-      break
-    case 'FIVE_YEAR':
-      period = '5y'
-      interval = '1mo'
-      break
-    case 'TEN_YEAR':
-      period = '10y'
-      interval = '1mo'
-      break
-    case 'YTD':
+    case 'ytd': // YEAR_TO_DATE
       period = 'ytd'
       interval = '1d'
       break
-    case 'MAX':
+    case '1y': // YEAR
+      period = '1y'
+      interval = '1d'
+      break
+    case '5y': // FIVE_YEARS
+      period = '5y'
+      interval = '1wk'
+      break
+    case 'max': // MAX
       period = 'max'
       interval = '1mo'
       break

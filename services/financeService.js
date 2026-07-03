@@ -26,8 +26,9 @@ const services = {
 var getQuoteSummary = async ({ symbol, provider, fallbackName }) => {
   const settings = new SettingsHandler()
 
-  // Bypass cache temporarily to force using new Python service
-  return (async () => {
+  // Cache summaries (5 min) — the panel ticker requests them on every
+  // rotation and uncached calls quickly run into Yahoo 429 rate limits
+  return cacheOrDefault(`summary_${provider}_${symbol}`, async () => {
     const service = services[provider]
 
     if (!service) {
@@ -66,7 +67,7 @@ var getQuoteSummary = async ({ symbol, provider, fallbackName }) => {
     }
 
     return summary
-  })()
+  })
 }
 
 var getHistoricalQuotes = async ({ symbol, provider, range = '1y', includeTimestamps = true }) => {

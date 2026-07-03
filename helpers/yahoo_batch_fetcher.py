@@ -53,54 +53,88 @@ def convert_time_to_timestamp(time_value):
     
     return None
 
+def as_fraction(value):
+    """/v7/finance/quote returns percents in percent units (1.23 = 1.23 %),
+    the extension expects fractions (0.0123) like the quoteSummary module"""
+    if isinstance(value, (int, float)):
+        return value / 100
+    return None
+
+
 def get_batch_quotes(symbols):
     """Get batch quotes for multiple symbols"""
     try:
-        # Create a single Ticker object with all symbols
-        ticker = Ticker(symbols)
-        price_data = ticker.price
-        
-        if price_data is None:
-            return {"error": "No price data received from Yahoo"}
-        
+        # fail fast instead of stalling for 20+ seconds in retry backoff
+        ticker = Ticker(symbols, retry=1, timeout=12)
+
+        # 'quotes' hits /v7/finance/quote ONCE for all symbols, unlike
+        # 'price' which requests /v10/finance/quoteSummary per symbol
+        # and quickly runs into 429 rate limits
+        quotes = ticker.quotes
+
+        if not quotes:
+            return {"error": "No quote data received from Yahoo"}
+
+        if isinstance(quotes, str):
+            return {"error": quotes}
+
+        # yahooquery returns a dict keyed by symbol ({'TSLA': {...}, ...});
+        # the inner dicts carry no 'symbol' field. Lists appear on some
+        # yahooquery versions, single quotes may come back as a flat dict.
+        by_symbol = {}
+        if isinstance(quotes, dict):
+            if "symbol" in quotes:
+                by_symbol[quotes["symbol"]] = quotes
+            else:
+                for key, value in quotes.items():
+                    if isinstance(value, dict):
+                        by_symbol[value.get("symbol", key)] = value
+        elif isinstance(quotes, list):
+            for q in quotes:
+                if isinstance(q, dict):
+                    by_symbol[q.get("symbol")] = q
+
+        if not by_symbol:
+            # nothing parseable at all — treat as a total failure so the
+            # extension retries the batch instead of fetching individually
+            return {"error": "No parseable quote data received from Yahoo"}
+
         result = {}
-        
-        # Process each symbol's data
+
         for symbol in symbols:
-            symbol_data = price_data.get(symbol)
-            
-            if symbol_data and isinstance(symbol_data, dict):
-                # Extract the data in the format expected by the extension
+            q = by_symbol.get(symbol)
+
+            if q:
                 result[symbol] = {
-                    "regularMarketPrice": symbol_data.get("regularMarketPrice"),
-                    "regularMarketChange": symbol_data.get("regularMarketChange"),
-                    "regularMarketChangePercent": symbol_data.get("regularMarketChangePercent"),
-                    "regularMarketPreviousClose": symbol_data.get("regularMarketPreviousClose"),
-                    "regularMarketOpen": symbol_data.get("regularMarketOpen"),
-                    "regularMarketDayHigh": symbol_data.get("regularMarketDayHigh"),
-                    "regularMarketDayLow": symbol_data.get("regularMarketDayLow"),
-                    "regularMarketVolume": symbol_data.get("regularMarketVolume"),
-                    "regularMarketTime": convert_time_to_timestamp(symbol_data.get("regularMarketTime")),
-                    "longName": symbol_data.get("longName") or symbol_data.get("shortName"),
-                    "shortName": symbol_data.get("shortName"),
-                    "currencySymbol": symbol_data.get("currency") or "$",
-                    "exchangeName": symbol_data.get("exchange") or symbol_data.get("fullExchangeName"),
-                    "marketState": symbol_data.get("marketState"),
-                    "preMarketPrice": symbol_data.get("preMarketPrice"),
-                    "preMarketChange": symbol_data.get("preMarketChange"),
-                    "preMarketChangePercent": symbol_data.get("preMarketChangePercent"),
-                    "preMarketTime": symbol_data.get("preMarketTime"),
-                    "postMarketPrice": symbol_data.get("postMarketPrice"),
-                    "postMarketChange": symbol_data.get("postMarketChange"),
-                    "postMarketChangePercent": symbol_data.get("postMarketChangePercent"),
-                    "postMarketTime": symbol_data.get("postMarketTime")
+                    "regularMarketPrice": q.get("regularMarketPrice"),
+                    "regularMarketChange": q.get("regularMarketChange"),
+                    "regularMarketChangePercent": as_fraction(q.get("regularMarketChangePercent")),
+                    "regularMarketPreviousClose": q.get("regularMarketPreviousClose"),
+                    "regularMarketOpen": q.get("regularMarketOpen"),
+                    "regularMarketDayHigh": q.get("regularMarketDayHigh"),
+                    "regularMarketDayLow": q.get("regularMarketDayLow"),
+                    "regularMarketVolume": q.get("regularMarketVolume"),
+                    "regularMarketTime": convert_time_to_timestamp(q.get("regularMarketTime")),
+                    "longName": q.get("longName") or q.get("shortName"),
+                    "shortName": q.get("shortName"),
+                    "currencySymbol": q.get("currency") or "$",
+                    "exchangeName": q.get("fullExchangeName") or q.get("exchange"),
+                    "marketState": q.get("marketState"),
+                    "preMarketPrice": q.get("preMarketPrice"),
+                    "preMarketChange": q.get("preMarketChange"),
+                    "preMarketChangePercent": as_fraction(q.get("preMarketChangePercent")),
+                    "preMarketTime": convert_time_to_timestamp(q.get("preMarketTime")),
+                    "postMarketPrice": q.get("postMarketPrice"),
+                    "postMarketChange": q.get("postMarketChange"),
+                    "postMarketChangePercent": as_fraction(q.get("postMarketChangePercent")),
+                    "postMarketTime": convert_time_to_timestamp(q.get("postMarketTime"))
                 }
             else:
                 # If individual symbol fails, add error entry
                 result[symbol] = {"error": f"No data available for {symbol}"}
-        
+
         return result
-        
+
     except Exception as e:
         return {"error": f"Failed to fetch batch quotes: {str(e)}"}
 

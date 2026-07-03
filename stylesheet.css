@@ -117,6 +117,19 @@
     border-bottom: 1px dotted;
 }
 
+.stocks-extension .card.news-card .news-expanded-box {
+    margin-top: 5px;
+}
+
+.stocks-extension .card.news-card .news-read-more {
+    margin-top: 6px;
+    padding: 2px 0;
+}
+
+.stocks-extension .card.news-card .news-read-more:hover {
+    font-weight: bold;
+}
+
 /*** stock details ***/
 .stocks-extension .stock-details {
     min-width: 480px;

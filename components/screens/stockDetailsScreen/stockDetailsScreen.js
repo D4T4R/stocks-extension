@@ -32,19 +32,28 @@ var StockDetailsScreen = GObject.registerClass({
     this._sync()
   }
 
-  async _sync () {
+  async _sync (forceRefresh = false) {
     log(`📈 Details: Loading data for ${this._passedQuoteSummary.Symbol}...`)
-    
+
     try {
-      // Use sequential loading instead of parallel to avoid overwhelming Yahoo servers
-      log(`📈 Details: Fetching quote summary for ${this._passedQuoteSummary.Symbol}`)
-      const quoteSummary = await FinanceService.getQuoteSummary({
-        symbol: this._passedQuoteSummary.Symbol,
-        provider: this._passedQuoteSummary.Provider,
-        fallbackName: this._passedQuoteSummary.FullName
-      })
-      log(`📈 Details: Quote summary received: ${quoteSummary?.Symbol}`)
-      
+      // The overview screen already fetched a full quote summary for this
+      // symbol (it is refreshed every ticker cycle), so reuse it instead of
+      // hitting the API again — only the chart data needs to be fetched.
+      let quoteSummary
+
+      if (!forceRefresh && this._passedQuoteSummary && this._passedQuoteSummary.Close) {
+        log(`📈 Details: Reusing quote summary from overview for ${this._passedQuoteSummary.Symbol}`)
+        quoteSummary = this._passedQuoteSummary
+      } else {
+        log(`📈 Details: Fetching quote summary for ${this._passedQuoteSummary.Symbol}`)
+        quoteSummary = await FinanceService.getQuoteSummary({
+          symbol: this._passedQuoteSummary.Symbol,
+          provider: this._passedQuoteSummary.Provider,
+          fallbackName: this._passedQuoteSummary.FullName
+        })
+        log(`📈 Details: Quote summary received: ${quoteSummary?.Symbol}`)
+      }
+
       log(`📊 Details: Fetching historical data for ${this._passedQuoteSummary.Symbol} (range: ${this._selectedChartRange})`)
       const quoteHistorical = await FinanceService.getHistoricalQuotes({
         symbol: this._passedQuoteSummary.Symbol,
@@ -79,7 +88,7 @@ var StockDetailsScreen = GObject.registerClass({
 
     searchBar.connect('refresh', () => {
       clearCache()
-      this._sync()
+      this._sync(true)
     })
 
     const stockDetailsTabButtonGroup = new ButtonGroup({
@@ -201,10 +210,10 @@ var StockDetailsScreen = GObject.registerClass({
 
     searchBar.connect('refresh', () => {
       clearCache()
-      this._sync()
+      this._sync(true)
     })
 
-    const errorLabel = new St.Label({ 
+    const errorLabel = new St.Label({
       text: `Error loading ${this._passedQuoteSummary.Symbol}: ${error.message}`,
       style_class: 'error-label'
     })

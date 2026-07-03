@@ -26,7 +26,9 @@ var createNewsListFromYahooData = (responseData, type, error) => {
 
   try {
     const xmlDataObj = fromXML(responseData)
-    newObject.Items = xmlDataObj.rss.channel.item.map(newsItem => {
+    // a channel with a single item parses as an object instead of an array
+    const rawItems = [].concat(xmlDataObj.rss.channel.item || [])
+    newObject.Items = rawItems.map(newsItem => {
       const previewItem = new NewsPreviewItem()
 
       previewItem.Description = newsItem.description

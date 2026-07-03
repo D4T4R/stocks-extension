@@ -9,7 +9,7 @@ const { FlatList } = Me.imports.components.flatList.flatList
 const { StockCard } = Me.imports.components.cards.stockCard
 const { SearchBar } = Me.imports.components.searchBar.searchBar
 const { setTimeout, clearTimeout } = Me.imports.helpers.components
-const { removeCache, executeSequentially } = Me.imports.helpers.data
+const { removeCache, setCachedValue, executeSequentially } = Me.imports.helpers.data
 
 const {
   SettingsHandler,
@@ -196,16 +196,25 @@ var StockOverviewScreen = GObject.registerClass({
         }
       }
     } else {
-      log('📊 Overview: Batch fetch failed, falling back to sequential loading')
-      // Fallback to sequential loading
-      const quoteTasks = this._settings.symbol_pairs.map(symbolData => () => FinanceService.getQuoteSummary({
-        ...symbolData,
-        fallbackName: symbolData.name
-      }))
-      
-      quoteSummaries = await executeSequentially(quoteTasks)
+      // A full batch failure is almost always Yahoo rate limiting. Fetching
+      // all symbols individually would fire 20+ additional requests into the
+      // same rate limit and stall the popup for minutes — instead show a
+      // notice and let the periodic refresh retry the single batch request.
+      log('📊 Overview: Batch fetch failed (likely rate limited), retrying on next refresh cycle')
+      this._showLoadingInfoTimeoutId = clearTimeout(this._showLoadingInfoTimeoutId)
+      this._list.show_error_info('Yahoo is rate limiting, retrying shortly …')
+      this._isRendering = false
+      return
     }
     
+    // share fresh results with the summary cache so the panel ticker and the
+    // details screen reuse them instead of spawning their own fetches
+    quoteSummaries.forEach(summary => {
+      if (summary && summary.Symbol) {
+        setCachedValue(`summary_${summary.Provider}_${summary.Symbol}`, summary)
+      }
+    })
+
     log(`📊 Overview: Final result: ${quoteSummaries.filter(s => s).length} valid summaries`)
 
     this._showLoadingInfoTimeoutId = clearTimeout(this._showLoadingInfoTimeoutId)

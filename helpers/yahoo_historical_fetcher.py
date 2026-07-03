@@ -31,7 +31,7 @@ except ImportError as e:
 def get_historical_data(symbol, period='1d', interval='1m'):
     """Get historical data for a single symbol"""
     try:
-        ticker = Ticker(symbol)
+        ticker = Ticker(symbol, retry=1, timeout=12)
         history = ticker.history(period=period, interval=interval)
         
         if history is None or history.empty:
@@ -40,20 +40,24 @@ def get_historical_data(symbol, period='1d', interval='1m'):
         # Reset index to get date as a column
         history = history.reset_index()
         
-        # Convert to list of dictionaries matching the extension's expected format
+        # The extension's chart component expects series data as [timestamp, value] pairs
         chart_data = []
         timestamps = []
         volume_data = []
-        
+
         for _, row in history.iterrows():
-            # Convert timestamp to milliseconds since epoch
-            timestamp = int(row['date'].timestamp() * 1000) if hasattr(row['date'], 'timestamp') else 0
-            close_price = round(float(row['close']), 2) if not pd.isna(row['close']) else 0
-            volume = int(row['volume']) if not pd.isna(row['volume']) else 0
-            
-            chart_data.append(close_price)
+            # Convert timestamp to milliseconds since epoch (row['date'] may be a
+            # datetime, a plain date (daily intervals) or a string depending on interval)
+            try:
+                timestamp = int(pd.Timestamp(row['date']).timestamp() * 1000)
+            except Exception:
+                continue
+            close_price = round(float(row['close']), 2) if not pd.isna(row['close']) else None
+            volume = int(row['volume']) if 'volume' in row and not pd.isna(row['volume']) else None
+
+            chart_data.append([timestamp, close_price])
             timestamps.append(timestamp)
-            volume_data.append(volume)
+            volume_data.append([timestamp, volume])
         
         # Get market start and end times (approximate)
         market_start = timestamps[0] if timestamps else 0

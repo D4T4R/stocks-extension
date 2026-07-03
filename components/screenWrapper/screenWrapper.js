@@ -59,8 +59,16 @@ var ScreenWrapper = GObject.registerClass({
             break
         }
 
-        // Clear existing children and add the screen
-        this.destroy_all_children()
+        // Clear existing children and add the screen.
+        // The cached overview screen must only be detached (not destroyed),
+        // otherwise re-adding it later fails and the popup stays blank.
+        this.get_children().forEach(child => {
+          if (child === this._cachedOverviewScreen) {
+            this.remove_child(child)
+          } else {
+            child.destroy()
+          }
+        })
         this.add_actor(screen)
         
         if (isReusingCachedOverview) {
@@ -74,6 +82,13 @@ var ScreenWrapper = GObject.registerClass({
         if (this._showScreenConnectId) {
           this._mainEventHandler.disconnect(this._showScreenConnectId)
         }
+
+        // The cached overview screen may currently be detached (another screen
+        // is shown) and would leak unless destroyed explicitly.
+        if (this._cachedOverviewScreen && !this._cachedOverviewScreen.get_parent()) {
+          this._cachedOverviewScreen.destroy()
+        }
+        this._cachedOverviewScreen = null
       }
     }
 )

@@ -32,7 +32,7 @@ except ImportError as e:
 def get_quote(symbol):
     """Get quote data for a single symbol"""
     try:
-        ticker = Ticker(symbol)
+        ticker = Ticker(symbol, retry=1, timeout=12)
         price_data = ticker.price
         
         if symbol not in price_data:
@@ -64,7 +64,7 @@ def get_quote(symbol):
 def get_historical_data(symbol, period='1mo', interval='1d'):
     """Get historical data for a single symbol"""
     try:
-        ticker = Ticker(symbol)
+        ticker = Ticker(symbol, retry=1, timeout=12)
         history = ticker.history(period=period, interval=interval)
         
         if history is None or history.empty:

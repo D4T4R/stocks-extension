@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "updatedAt": 1783100327123,
+  "nodeCount": 6,
+  "nodes": {
+    "mem-MEMORY-memory-index-0": {
+      "id": "mem-MEMORY-memory-index-0",
+      "category": "core",
+      "confidence": 0.5,
+      "accessCount": 0,
+      "createdAt": 1783087931817
+    },
+    "mem-extension-data-architecture-----0": {
+      "id": "mem-extension-data-architecture-----0",
+      "category": "extension-data-architecture",
+      "confidence": 0.5,
+      "accessCount": 0,
+      "createdAt": 1783087931818
+    },
+    "mem-gnome-shell-env-----0": {
+      "id": "mem-gnome-shell-env-----0",
+      "category": "gnome-shell-env",
+      "confidence": 0.5,
+      "accessCount": 0,
+      "createdAt": 1783087931818
+    },
+    "insight-1783100274642-kmab": {
+      "id": "insight-1783100274642-kmab",
+      "category": "insights",
+      "confidence": 0.5,
+      "accessCount": 0,
+      "createdAt": 1783100274642
+    },
+    "insight-1783100274642-mkhd": {
+      "id": "insight-1783100274642-mkhd",
+      "category": "insights",
+      "confidence": 0.5,
+      "accessCount": 0,
+      "createdAt": 1783100274642
+    },
+    "insight-1783100274642-qdol": {
+      "id": "insight-1783100274642-qdol",
+      "category": "insights",
+      "confidence": 0.5,
+      "accessCount": 0,
+      "createdAt": 1783100274642
+    }
+  },
+  "edges": [
+    {
+      "sourceId": "insight-1783100274642-kmab",
+      "targetId": "insight-1783100274642-mkhd",
+      "type": "similar",
+      "weight": 0.7115384615384616
+    },
+    {
+      "sourceId": "insight-1783100274642-kmab",
+      "targetId": "insight-1783100274642-qdol",
+      "type": "similar",
+      "weight": 0.7378640776699029
+    },
+    {
+      "sourceId": "insight-1783100274642-mkhd",
+      "targetId": "insight-1783100274642-qdol",
+      "type": "similar",
+      "weight": 0.819047619047619
+    }
+  ],
+  "pageRanks": {
+    "mem-MEMORY-memory-index-0": 0.12405024299396868,
+    "mem-extension-data-architecture-----0": 0.12405024299396868,
+    "mem-gnome-shell-env-----0": 0.12405024299396868,
+    "insight-1783100274642-kmab": 0.12405024299396868,
+    "insight-1783100274642-mkhd": 0.1767715812370643,
+    "insight-1783100274642-qdol": 0.3270274467870612
+  }
+}

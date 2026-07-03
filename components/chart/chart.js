@@ -69,12 +69,18 @@ var Chart = GObject.registerClass({
       secondaryColor: secondaryColor
     }
 
-    this._draw_line_chart(baseParams)
-    this._draw_volume_bars(baseParams)
-    this._draw_crosshair(baseParams)
+    // an exception during repaint would break the allocation cycle of the
+    // whole popup menu (blank page), so never let one escape
+    try {
+      this._draw_line_chart(baseParams)
+      this._draw_volume_bars(baseParams)
+      this._draw_crosshair(baseParams)
 
-    if (this._onDraw) {
-      this._onDraw(baseParams)
+      if (this._onDraw) {
+        this._onDraw(baseParams)
+      }
+    } catch (e) {
+      log(`📈 Chart: draw failed: ${e.message}`)
     }
 
     // dispose cairo stuff
